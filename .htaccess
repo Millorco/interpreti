@@ -1,0 +1,21 @@
+# Radice del progetto.
+# La document root del sito dovrebbe essere la cartella "public".
+# Se l'hosting non lo consente e tutto il progetto finisce sotto la web root,
+# queste regole proteggono i file non pubblici e rimandano a public/.
+
+Options -Indexes
+
+<FilesMatch "^(create_admin\.php|README\.md|\.gitignore|config(\.sample)?\.php)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^$ public/ [R=302,L]
+</IfModule>
