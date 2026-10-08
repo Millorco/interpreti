@@ -17,5 +17,8 @@ Options -Indexes
 
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    RewriteRule ^$ public/ [R=302,L]
+    # Il percorso viene preso dall'URL richiesto, così il redirect funziona
+    # sia nella radice del sito sia in una sottocartella.
+    RewriteCond %{REQUEST_URI} ^(.*)/$
+    RewriteRule ^$ %1/public/ [R=302,L]
 </IfModule>
