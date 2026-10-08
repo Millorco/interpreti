@@ -21,7 +21,12 @@ Chi arriva da un IP esterno alla LAN e non è loggato come admin riceve **403**.
 
 ## Installazione
 
+Tutto ciò che va caricato sul server è nella cartella **`www/`**: se ne copia il *contenuto*
+(compreso il file nascosto `.htaccess`) nella cartella del sito, ad esempio `/interpreti/`.
+
 ### 1. Database
+
+Serve un database già esistente (creato dal pannello dell'hosting, oppure a mano):
 
 ```sql
 CREATE DATABASE interpreti CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -29,20 +34,26 @@ CREATE USER 'interpreti_app'@'localhost' IDENTIFIED BY 'una-password-robusta';
 GRANT SELECT, INSERT, UPDATE, DELETE ON interpreti.* TO 'interpreti_app'@'localhost';
 ```
 
-```bash
-mysql -u root -p interpreti < sql/schema.sql
-mysql -u root -p interpreti < sql/seed.sql     # facoltativo: 6 interpreti fittizi di prova
-```
+Poi importare **`www/database.sql`**:
 
-L'utente dell'applicazione ha bisogno solo di `SELECT, INSERT, UPDATE, DELETE`.
+- **phpMyAdmin**: selezionare il database nella colonna di sinistra, aprire la scheda **Importa**,
+  scegliere `database.sql` e premere **Esegui** (codifica `utf-8`, formato `SQL`).
+- **riga di comando**: `mysql -u root -p interpreti < www/database.sql`
+
+Il file non crea né seleziona alcun database e non cancella nulla: crea le tabelle solo se mancano
+e aggiunge lingue, nazioni e utente `admin` solo se non ci sono già. Si può quindi reimportare
+senza perdere dati, ma **non aggiorna** la struttura di tabelle già esistenti.
+
+`dati_di_prova.sql` (facoltativo, nella radice del progetto) aggiunge 6 interpreti fittizi: si
+importa allo stesso modo, dopo `database.sql`.
+
+L'utente del database usato dall'applicazione ha bisogno solo di `SELECT, INSERT, UPDATE, DELETE`
+(per l'import servono anche `CREATE`, `INDEX` e `REFERENCES`).
 
 ### 2. Configurazione
 
-```bash
-cp includes/config.sample.php includes/config.php
-```
-
-Compilare `includes/config.php`:
+Copiare `www/includes/config.sample.php` in `www/includes/config.php` (sul server:
+`includes/config.php`) e compilarlo:
 
 | Chiave | Significato |
 |---|---|
@@ -60,14 +71,23 @@ altrove e indicarne il percorso con la variabile d'ambiente `INTERPRETI_CONFIG`
 
 ### 3. Primo amministratore
 
-Da riga di comando, nella cartella del progetto:
+`database.sql` crea già un amministratore iniziale:
+
+- username: `admin`
+- password: `Interpreti`
+
+**Cambiare la password subito dopo il primo accesso** (menu "Password"): quella iniziale è scritta
+nel codice e va considerata pubblica.
+
+Per creare altri amministratori, o reimpostare una password, da riga di comando nella cartella
+dell'applicazione (`www/` in locale):
 
 ```bash
 php create_admin.php mario
 ```
 
 Lo script chiede la password due volte (minimo 10 caratteri) e salva solo l'hash (Argon2id, o bcrypt
-se Argon2 non è disponibile). Non esistono password di default. Rieseguendolo con uno username già
+se Argon2 non è disponibile). Rieseguendolo con uno username già
 esistente la password viene reimpostata (utile se l'admin l'ha dimenticata). Lo script funziona solo
 da CLI: via web risponde 403.
 
@@ -77,7 +97,7 @@ nella tabella `utenti`.
 
 ### 4. Deploy su Apache
 
-**Consigliato:** la document root punta alla cartella `public/`, così `includes/`, `sql/` e
+**Consigliato:** la document root punta alla cartella `public/`, così `includes/`, `database.sql` e
 `create_admin.php` restano fuori dal web.
 
 ```apache
@@ -91,11 +111,13 @@ nella tabella `utenti`.
 </VirtualHost>
 ```
 
-**Hosting condiviso senza controllo sulla document root:** caricare l'intero progetto in una
-sottocartella (es. `/interpreti/`). I file `.htaccess` inclusi negano l'accesso a `includes/`, `sql/`,
-`create_admin.php` e `README.md`, e la radice rimanda a `public/`; l'applicazione sarà raggiungibile
-su `/interpreti/public/`. Dopo il caricamento verificare che `https://sito/interpreti/includes/config.php`
-e `https://sito/interpreti/sql/schema.sql` rispondano **403**.
+**Hosting condiviso senza controllo sulla document root:** caricare il contenuto di `www/` in una
+sottocartella (es. `/interpreti/`). I file `.htaccess` inclusi negano l'accesso a `includes/`, ai file
+`.sql` e a `create_admin.php`, e la radice rimanda a `public/`; l'applicazione sarà raggiungibile
+su `/interpreti/` (che porta a `/interpreti/public/`). Attenzione a copiare anche il file `.htaccess`
+della radice: inizia con un punto e molti programmi lo nascondono. Dopo il caricamento verificare che
+`https://sito/interpreti/includes/config.php` e `https://sito/interpreti/database.sql` rispondano
+**403**; una volta importato, `database.sql` si può anche cancellare dal server.
 
 In produzione usare HTTPS: il cookie di sessione riceve automaticamente il flag `Secure`.
 
@@ -140,20 +162,24 @@ flag `Secure` del cookie.
 ## Struttura
 
 ```
-public/                 document root
-  index.php             elenco, ricerca, filtri, paginazione
-  scheda.php            scheda di dettaglio stampabile
-  login.php, logout.php
-  admin/                interprete_form.php, interprete_elimina.php, lingue.php, password.php
-  assets/css/style.css, assets/js/app.js
-includes/               (non pubblica)
-  bootstrap.php         configurazione, errori, header di sicurezza, sessione
-  auth.php              controllo IP/CIDR, login, require_view_access(), require_admin()
-  db.php, helpers.php   PDO; e(), url(), CSRF, messaggi
-  interpreti.php        ricerca, validazione, salvataggio, disponibilità
-  header.php, footer.php, config.sample.php
-sql/schema.sql, sql/seed.sql
-create_admin.php        creazione/reset admin (solo CLI)
+www/                      DA CARICARE SUL SERVER (il contenuto, non la cartella)
+  .htaccess               protegge i file non pubblici e rimanda a public/
+  database.sql            struttura e dati iniziali, da importare (anche da phpMyAdmin)
+  create_admin.php        creazione/reset admin (solo CLI)
+  public/                 parte visibile (document root consigliata)
+    index.php             home: ricerca per lingua ed elenco dei risultati
+    scheda.php            scheda di dettaglio stampabile
+    login.php, logout.php
+    admin/                interprete_form.php, interprete_elimina.php, lingue.php, password.php
+    assets/css/style.css, assets/js/app.js
+  includes/               (non pubblica)
+    bootstrap.php         configurazione, errori, header di sicurezza, sessione
+    auth.php              controllo IP/CIDR, login, require_view_access(), require_admin()
+    db.php, helpers.php   PDO; e(), url(), CSRF, messaggi
+    interpreti.php        ricerca, validazione, salvataggio, disponibilità
+    header.php, footer.php, config.sample.php
+dati_di_prova.sql         6 interpreti fittizi (facoltativo, non va sul server)
+README.md
 ```
 
 ## Note d'uso
@@ -165,7 +191,7 @@ create_admin.php        creazione/reset admin (solo CLI)
 - **Home e ricerca.** La home mostra solo il riquadro di ricerca per lingua (una sola, o "Tutte"):
   l'elenco degli interpreti compare dopo aver premuto "Cerca".
 - **Nazione di nascita.** Si sceglie da un menu a tendina alimentato dalla tabella `nazioni`
-  (197 voci, caricate da `schema.sql`). Per aggiungere o rinominare una voce si interviene
+  (197 voci, caricate da `database.sql`). Per aggiungere o rinominare una voce si interviene
   direttamente sulla tabella.
 - **Schede non attive.** L'admin vede in elenco tutte le schede (lo stato è indicato nell'ultima
   colonna, ordinabile); in consultazione compaiono solo quelle attive.

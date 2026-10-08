@@ -1,11 +1,11 @@
-# Radice del progetto.
-# La document root del sito dovrebbe essere la cartella "public".
-# Se l'hosting non lo consente e tutto il progetto finisce sotto la web root,
-# queste regole proteggono i file non pubblici e rimandano a public/.
+# Cartella da caricare sul server (contenuto di "www").
+# Queste regole proteggono i file non pubblici (script CLI, configurazione,
+# file .sql) e rimandano i visitatori alla sottocartella public/.
+# Se possibile, impostare comunque la document root del sito su "public".
 
 Options -Indexes
 
-<FilesMatch "^(create_admin\.php|README\.md|\.gitignore|config(\.sample)?\.php)$">
+<FilesMatch "^(create_admin\.php|README\.md|\.gitignore|config(\.sample)?\.php|.*\.sql)$">
     <IfModule mod_authz_core.c>
         Require all denied
     </IfModule>

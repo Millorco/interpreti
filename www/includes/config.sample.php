@@ -24,6 +24,7 @@ return [
     // Rete (o elenco di reti) in notazione CIDR da cui è consentita la
     // consultazione. Si può indicare una stringa o un array, es.:
     //   'rete_lan' => ['192.168.10.0/24', '127.0.0.1/32'],
+	//'rete_lan' => ['0.0.0.0/0', '::/0'],
     'rete_lan' => '192.168.10.0/24',
 
     // true  = l'admin può fare login (con password) anche da fuori LAN

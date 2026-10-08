@@ -1,5 +1,5 @@
 # Credenziali e configurazione locale
-/includes/config.php
+/www/includes/config.php
 # File temporanei / di sistema
 *.log
 .DS_Store

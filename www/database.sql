@@ -1,15 +1,21 @@
 -- =====================================================================
---  Database interpreti - schema
+--  Database interpreti - struttura e dati iniziali
 --  MySQL 5.7+ / MariaDB 10.3+   (utf8mb4, InnoDB)
 --
---  Import:  mysql -u UTENTE -p NOME_DATABASE < sql/schema.sql
---  Il database va creato prima (vedi README.md).
+--  Da importare in un database GIA' ESISTENTE:
+--    - phpMyAdmin: selezionare il database, scheda "Importa", scegliere
+--      questo file e premere "Esegui";
+--    - riga di comando:  mysql -u UTENTE -p NOME_DATABASE < database.sql
+--
+--  Il file non crea né seleziona alcun database e non elimina nulla:
+--  crea le tabelle solo se mancano e aggiunge lingue, nazioni e l'utente
+--  "admin" solo se non sono già presenti.
 -- =====================================================================
 
 SET NAMES utf8mb4;
 
 -- ---------------------------------------------------------------------
--- Utenti amministratori (nessuna password di default: usare create_admin.php)
+-- Utenti amministratori
 -- ---------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS utenti (
     id              INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -20,6 +26,13 @@ CREATE TABLE IF NOT EXISTS utenti (
     PRIMARY KEY (id),
     UNIQUE KEY uq_utenti_username (username)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Amministratore iniziale:  username "admin"  /  password "Interpreti"
+-- ATTENZIONE: la password è pubblica (è scritta qui): cambiarla subito dopo
+-- il primo accesso dal menu "Password". Se l'utente "admin" esiste già non
+-- viene modificato (INSERT IGNORE).
+INSERT IGNORE INTO utenti (username, password_hash) VALUES
+    ('admin', '$2y$12$L50QMcH1cw/hCgs73MZSV.3CiwvyogbaMqb7iHDCUU0D4acuG78y6');
 
 -- ---------------------------------------------------------------------
 -- Tentativi di login falliti (per il blocco temporaneo)

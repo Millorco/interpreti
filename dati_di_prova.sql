@@ -1,6 +1,7 @@
 -- =====================================================================
 --  Dati di prova (OPZIONALI): 6 interpreti fittizi, nomi inventati.
---  Import (dopo schema.sql):  mysql -u UTENTE -p NOME_DATABASE < sql/seed.sql
+--  Da importare DOPO www/database.sql (phpMyAdmin, scheda "Importa", oppure
+--  mysql -u UTENTE -p NOME_DATABASE < dati_di_prova.sql). Non va caricato sul server.
 -- =====================================================================
 
 SET NAMES utf8mb4;
