@@ -1,6 +1,6 @@
 <?php
 /**
- * Inizializzazione comune a tutte le pagine (e allo script CLI):
+ * Inizializzazione comune a tutte le pagine:
  * configurazione, gestione errori, header di sicurezza, sessione.
  */
 

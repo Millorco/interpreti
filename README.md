@@ -69,9 +69,9 @@ Copiare `www/includes/config.sample.php` in `www/includes/config.php` (sul serve
 altrove e indicarne il percorso con la variabile d'ambiente `INTERPRETI_CONFIG`
 (in Apache: `SetEnv INTERPRETI_CONFIG /percorso/privato/interpreti-config.php`).
 
-### 3. Primo amministratore
+### 3. Amministratore
 
-`database.sql` crea già un amministratore iniziale:
+`database.sql` crea l'utente amministratore:
 
 - username: `admin`
 - password: `Interpreti`
@@ -79,26 +79,24 @@ altrove e indicarne il percorso con la variabile d'ambiente `INTERPRETI_CONFIG`
 **Cambiare la password subito dopo il primo accesso** (menu "Password"): quella iniziale è scritta
 nel codice e va considerata pubblica.
 
-Per creare altri amministratori, o reimpostare una password, da riga di comando nella cartella
-dell'applicazione (`www/` in locale):
+L'applicazione prevede un solo amministratore: non c'è alcuna funzione per crearne altri.
+
+**Password dimenticata.** Non esiste una procedura di recupero dall'interfaccia. Si genera un nuovo
+hash in locale e lo si scrive nella tabella `utenti` (ad esempio da phpMyAdmin):
 
 ```bash
-php create_admin.php mario
+php -r "echo password_hash('nuova-password', PASSWORD_DEFAULT);"
 ```
 
-Lo script chiede la password due volte (minimo 10 caratteri) e salva solo l'hash (Argon2id, o bcrypt
-se Argon2 non è disponibile). Rieseguendolo con uno username già
-esistente la password viene reimpostata (utile se l'admin l'ha dimenticata). Lo script funziona solo
-da CLI: via web risponde 403.
-
-Senza accesso SSH: eseguire lo script in locale puntando `config.php` al database remoto, oppure
-creare l'hash in locale con `php -r "echo password_hash('...', PASSWORD_DEFAULT);"` e inserirlo a mano
-nella tabella `utenti`.
+```sql
+UPDATE utenti SET password_hash = 'HASH_GENERATO' WHERE username = 'admin';
+DELETE FROM login_tentativi;
+```
 
 ### 4. Deploy su Apache
 
-**Consigliato:** la document root punta alla cartella `public/`, così `includes/`, `database.sql` e
-`create_admin.php` restano fuori dal web.
+**Consigliato:** la document root punta alla cartella `public/`, così `includes/` e `database.sql`
+restano fuori dal web.
 
 ```apache
 <VirtualHost *:80>
@@ -112,8 +110,8 @@ nella tabella `utenti`.
 ```
 
 **Hosting condiviso senza controllo sulla document root:** caricare il contenuto di `www/` in una
-sottocartella (es. `/interpreti/`). I file `.htaccess` inclusi negano l'accesso a `includes/`, ai file
-`.sql` e a `create_admin.php`, e la radice rimanda a `public/`; l'applicazione sarà raggiungibile
+sottocartella (es. `/interpreti/`). I file `.htaccess` inclusi negano l'accesso a `includes/` e ai file
+`.sql`, e la radice rimanda a `public/`; l'applicazione sarà raggiungibile
 su `/interpreti/` (che porta a `/interpreti/public/`). Attenzione a copiare anche il file `.htaccess`
 della radice: inizia con un punto e molti programmi lo nascondono. Dopo il caricamento verificare che
 `https://sito/interpreti/includes/config.php` e `https://sito/interpreti/database.sql` rispondano
@@ -165,7 +163,6 @@ flag `Secure` del cookie.
 www/                      DA CARICARE SUL SERVER (il contenuto, non la cartella)
   .htaccess               protegge i file non pubblici e rimanda a public/
   database.sql            struttura e dati iniziali, da importare (anche da phpMyAdmin)
-  create_admin.php        creazione/reset admin (solo CLI)
   public/                 parte visibile (document root consigliata)
     index.php             home: ricerca per lingua ed elenco dei risultati
     scheda.php            scheda di dettaglio stampabile
